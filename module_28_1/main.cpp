@@ -4,7 +4,7 @@
 #include <mutex>
 #include <algorithm>
 
-const double max_distance = 100;
+const double max_distance = 50;
 std::mutex swim_access;
 
 class Swimmer{
@@ -48,7 +48,6 @@ void startSwim(Swimmer* swimmer)
     }
     swim_access.lock();
     swimmer->setTotalTime(timer);
-
     swim_access.unlock();
 }
 
@@ -91,7 +90,7 @@ int main() {
     for(size_t i = 0; i < swimmers.size(); ++i) {
 
         std::cout << i + 1 << " Name:" << swimmers[i]->getName() <<
-                    " Total time:" << swimmers[i]->getTotalTime() << std::endl;
+                    " Total time:" << swimmers[i]->getTotalTime() << " sec." << std::endl;
     }
     delete swimmer;
     return 0;
