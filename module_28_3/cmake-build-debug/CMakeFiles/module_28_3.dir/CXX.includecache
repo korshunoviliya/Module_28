@@ -1,0 +1,22 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+D:/Skillbox/Module_28/module_28_3/main.cpp
+iostream
+-
+thread
+-
+mutex
+-
+random
+-
+queue
+-
+ctime
+-
+
