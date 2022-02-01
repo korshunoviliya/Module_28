@@ -10,18 +10,48 @@ int getRandom(int min, int max) {
     std::uniform_int_distribution<> uid(min, max);
     return uid(gen);
 }
+/*
+struct OrderType{
+    int orderNumber;
+    int dish;
 
+    enum Dish {
+        PIZZA,
+        SOUP,
+        STEAK,
+        SALAD,
+        SUSHI,
+    };
+
+    static std::string typeDish(int dish) {
+
+        if (dish == PIZZA) return "Pizza";
+        else if (dish == SOUP) return "Soup";
+        else if (dish == STEAK) return "Steak";
+        else if (dish == SALAD) return "Salad";
+        else return "Sushi";
+    }
+    friend std::ostream& operator<< (std::ostream &out, const OrderType &orderType);
+};
+
+std::ostream& operator<< (std::ostream &out, const OrderType &orderType){
+    out << "#" << orderType.orderNumber << " - " << OrderType::typeDish(orderType.dish);
+    return out;
+}
+*/
 class Kitchen {
     static int numberOfDeliveries;
     bool kitchenIsFree{true};
-    std::mutex wait_for_kitchen;
-    std::mutex wait_for_courier;
-    std::mutex wait_for_cooking;
     const int timeOfDelivery = 30;
-    const int totalDelivery = 3;
+    const int totalDelivery = 10;
+
     std::queue<int> orderQueue;
     std::queue<int> deliveryQueue;
 
+    std::mutex wait_orderQueue;
+    std::mutex wait_deliveryQueue;
+
+    //friend struct OrderType;
 
     enum Dish {
         PIZZA,
@@ -42,49 +72,59 @@ class Kitchen {
 
     void delivery(){
         while (totalDelivery > numberOfDeliveries) {
-            //std::lock_guard<std::mutex> lk{wait_for_courier};
-            wait_for_courier.lock();
+
             std::this_thread::sleep_for(std::chrono::seconds(timeOfDelivery));
+
             if (!deliveryQueue.empty()){
                 std::cout << "Order handed over to courier:" << std::endl;
                 int sizeDeliveryQueue = deliveryQueue.size();
                 for(int i = 0; i < sizeDeliveryQueue; ++i){
                     std::cout << "\t" << i + 1 << ")"
                               << typeDish(deliveryQueue.front()) << std::endl;
+                    wait_deliveryQueue.lock();
                     deliveryQueue.pop();
+                    wait_deliveryQueue.unlock();
                 }
                 ++numberOfDeliveries;
             }
-            wait_for_courier.unlock();
         }
     }
     void cooking(){
         while (totalDelivery > numberOfDeliveries) {
-            wait_for_cooking.lock();
+
             if (kitchenIsFree && !orderQueue.empty()) {
                 kitchenIsFree = false;
-                std::cout << "The order has been sent to the kitchen: "
-                          << typeDish(orderQueue.front()) << std::endl;
-                std::this_thread::sleep_for(std::chrono::seconds(getRandom(5, 15)));
-                std::cout << "The order: " << typeDish(orderQueue.front())
-                          << " is ready!" << std::endl;
-                deliveryQueue.push(orderQueue.front());
+                wait_orderQueue.lock();
+                int temp = orderQueue.front();
                 orderQueue.pop();
+                wait_orderQueue.unlock();
+                std::cout << "The order has been sent to the kitchen: "
+                          << typeDish(temp) << std::endl;
+                std::this_thread::sleep_for(std::chrono::seconds(getRandom(5, 15)));
+                std::cout << "The order: " << typeDish(temp)
+                          << " is ready!" << std::endl;
+
+
+                wait_deliveryQueue.lock();
+                deliveryQueue.push(temp);
+                wait_deliveryQueue.unlock();
                 kitchenIsFree = true;
             }
-            wait_for_cooking.unlock();
+
         }
     }
 
     void order() {
         while (totalDelivery > numberOfDeliveries){
 
-            wait_for_kitchen.lock();
+
             std::this_thread::sleep_for(std::chrono::seconds(getRandom(5,10)));
             int newOrder = getRandom(0,4);
             std::cout << "New order accepted: " << typeDish(newOrder) << std::endl;
+
+            wait_orderQueue.lock();
             orderQueue.push(newOrder);
-            wait_for_kitchen.unlock();
+            wait_orderQueue.unlock();
         }
     }
 
